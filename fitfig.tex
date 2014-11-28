@@ -1,0 +1,28 @@
+\documentclass{article}
+
+\usepackage{lipsum}% dummy text
+
+\usepackage{fitfigure}
+
+\begin{document}
+
+\lipsum[1-3]
+
+\begin{fitfigure}
+  \centering
+  \includegraphics{example-image-a}
+  \caption{This is an example image.}
+\end{fitfigure}
+
+\lipsum[1]
+
+\begin{fitfigure}
+  \centering
+  \includegraphics{example-image-b}
+  \caption{This is another example image. We'll make this caption sprawl across a couple lines so we can ensure our measurements are correct.}
+\end{fitfigure}
+
+\lipsum
+
+\end{document}
+

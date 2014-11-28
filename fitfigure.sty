@@ -1,0 +1,173 @@
+%
+% fitfigure.sty
+%
+% Shrinks a figure to fit the remaining space on a page.
+%
+% Author:
+%   Kevin M. Godby <kevin@godby.org>
+%
+% Copyright (c) 2014
+%
+% License:
+%   LPPL Version 1.3c  2008-05-04
+%
+%   It may be distributed and/or modified under the conditions of the LaTeX
+%   Project Public License, either version 1.3c of this license or (at your
+%   option) any later version.  The latest version of this license is in
+%
+%      http://www.latex-project.org/lppl.txt
+%
+%   and version 1.3c or later is part of all distributions of LaTeX version
+%   2005/12/01 or later.
+%
+%   This file has the LPPL maintenance status "maintained".
+%
+
+% TODO allow for minimum size or minimum scale
+% TODO allow for maximum scale (in case width=\linewidth is too large)
+
+\ProvidesPackage{fitfigure}[2014/11/25 v0.1 Auto-scales figures to fit page]
+
+\RequirePackage{graphicx}
+\RequirePackage{expl3}
+\RequirePackage{xparse}
+
+\ExplSyntaxOn
+
+%
+% Create variants
+%
+
+\cs_generate_variant:Nn \prop_get:NnN {NxN}
+
+%
+% Declare the variables
+%
+
+% Box to store caption contents
+\box_new:N \g_ff_caption_box
+
+% Height of stored caption
+\dim_new:N \g_ff_captionheight_dim
+
+% Property list of fitfigures and their caption heights
+\prop_new:N \g_ff_captionheights_prop
+
+% Calculate space left on page
+\tl_new:N \g_ff_spaceremaining
+\tl_set:Nn \g_ff_spaceremaining {
+  \dim_eval:n { \pagegoal - \pagetotal - \baselineskip - \g_ff_captionheight_dim - \textfloatsep}
+}
+
+% Box to store figure contents
+\box_new:N \g_ff_figurecontents_box
+
+% Counter for fitfigures
+\newcounter{fitfigure}
+
+
+%
+% Back up macros before we redefine them
+%
+
+% Back up the original \caption command.
+\tl_set_eq:NN \ff_origcaption: \caption
+
+%
+% Define commands
+%
+
+% Redefine caption command to store contents.
+\RenewDocumentCommand \caption { o m } {
+  % Print caption in a box so we can calculate its height
+  \begin{lrbox}{\g_ff_caption_box}
+    \begin{minipage}{\linewidth}
+      \IfNoValueTF {#1} {
+        \ff_origcaption:{#2}
+      } {
+        \ff_origcaption:[#1]{#2}
+      }
+    \end{minipage}
+  \end{lrbox}
+  \dim_gset:Nn \g_ff_captionheight_dim { \box_ht:N \g_ff_caption_box }
+  \par
+  \box_use:N \g_ff_caption_box
+}
+
+% Add fitfigure caption height to property list.
+%
+% Parameters:
+%  #1 fitfigure index
+%  #2 caption height
+\cs_new:Npn \setfitfigurecaptionheight #1 #2 {
+  \prop_gput:Nnn \g_ff_captionheights_prop {#1} {#2}
+}
+
+
+% Define fitfigure environment.
+\NewDocumentEnvironment {fitfigure} {} {
+  \stepcounter{fitfigure}
+  \def\@captype{figure}
+  \ff_getcaptionheight:Nx \g_ff_captionheight_dim {\the\value{fitfigure}}
+  \PackageInfo{fitfigure}{Caption ~ height ~ is ~ \dim_use:N \g_ff_captionheight_dim}{}
+  \begin{lrbox}{\g_ff_figurecontents_box}
+    \begin{minipage}{\linewidth}
+} {
+    \end{minipage}
+  \end{lrbox}
+  \PackageInfo{fitfigure}{Caption ~ height ~ is ~ \the\g_ff_captionheight_dim}{}
+  \ff_writecaptionheight:xx {\the\value{fitfigure}} {\dim_use:N \g_ff_captionheight_dim}
+  \vskip\textfloatsep
+  \par\noindent
+  \begin{minipage}{\linewidth}
+    \tl_set_eq:NN \caption \ff_origcaption:
+    \box_use:N \g_ff_figurecontents_box
+  \end{minipage}
+  \par
+  \vskip\textfloatsep
+}
+
+% Write the fitfigure number and its caption height to the .aux file
+%
+% Parameters:
+%  #1 fitfigure number
+%  #2 caption height
+\cs_new:Npn \ff_writecaptionheight:xx #1#2 {
+  \write\@mainaux{\noexpand\setfitfigurecaptionheight{fitfigure#1}{#2}}
+}
+
+% Retrieve the height of the caption for the specified fitfigure. Returns 0pt
+% if the caption height hasn't yet been calculated.
+%
+% Parameters:
+%  #1 dimension in which to store value
+%  #2 fitfigure number
+\cs_new:Npn \ff_getcaptionheight:Nx #1#2 {
+  \prop_get:NxN \g_ff_captionheights_prop {fitfigure#2} \l_tmpa_dim
+  \quark_if_no_value:NTF \l_tmpa_dim {
+    \dim_gset:Nn #1 { 0.0pt }
+  } {
+    \dim_gset_eq:NN #1 \l_tmpa_dim
+  }
+}
+
+
+
+% Set default \includegraphics parameters.
+\setkeys {Gin} {
+  height = \g_ff_spaceremaining,
+  width = \linewidth,
+  keepaspectratio
+}
+
+
+% Print heights of captions from .aux file (if they exist).
+%\AtBeginDocument{
+%  \prop_show:N \g_ff_captionheights_prop
+%}
+
+
+\ExplSyntaxOff
+
+\endinput
+
