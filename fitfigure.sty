@@ -54,9 +54,19 @@
 \prop_new:N \g_ff_captionheights_prop
 
 % Calculate space left on page
-\tl_new:N \g_ff_spaceremaining
-\tl_set:Nn \g_ff_spaceremaining {
+\dim_new:N \g_ff_spaceremaining_dim
+\dim_set:Nn \g_ff_spaceremaining_dim {
   \dim_eval:n { \pagegoal - \pagetotal - \baselineskip - \g_ff_captionheight_dim - \textfloatsep}
+}
+
+% Minimum height of graphics
+\dim_new:N \g_ff_minimumheight_dim
+\dim_set:Nn \g_ff_minimumheight_dim { 0.2\textheight }
+
+% Calculate height of graphic
+\dim_new:N \g_ff_graphicheight_dim
+\dim_set:Nn \g_ff_graphicheight_dim {
+  \dim_max:nn { \g_ff_spaceremaining_dim } { \g_ff_minimumheight_dim }
 }
 
 % Box to store figure contents
@@ -64,7 +74,6 @@
 
 % Counter for fitfigures
 \newcounter{fitfigure}
-
 
 %
 % Back up macros before we redefine them
@@ -155,7 +164,7 @@
 
 % Set default \includegraphics parameters.
 \setkeys {Gin} {
-  height = \g_ff_spaceremaining,
+  height = \g_ff_graphicheight_dim,
   width = \linewidth,
   keepaspectratio
 }
